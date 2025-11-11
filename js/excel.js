@@ -125,4 +125,111 @@ async function updateCell(rowIndex, columnIndex, value) {
     }
 }
 
-async function updateRow(rowIndex, up
+async function updateRow(rowIndex, updates) {
+    try {
+        const promises = Object.entries(updates).map(([colIndex, value]) => {
+            return updateCell(rowIndex, parseInt(colIndex), value);
+        });
+        
+        await Promise.all(promises);
+        return true;
+    } catch (error) {
+        console.error("Error actualizando fila:", error);
+        throw error;
+    }
+}
+
+async function registerCall(rowIndex, callNumber, result, observation) {
+    const now = new Date();
+    const timestamp = formatDateTime(now);
+    const callText = `${timestamp} - ${result} - ${observation}`;
+    
+    let columnIndex;
+    switch (callNumber) {
+        case 1:
+            columnIndex = excelConfig.columns.llamado1;
+            break;
+        case 2:
+            columnIndex = excelConfig.columns.llamado2;
+            break;
+        case 3:
+            columnIndex = excelConfig.columns.llamado3;
+            break;
+        default:
+            throw new Error("Número de llamado inválido");
+    }
+    
+    return await updateCell(rowIndex, columnIndex, callText);
+}
+
+async function closeCase(rowIndex, estado) {
+    const now = new Date();
+    const userName = getCurrentUserName();
+    
+    const updates = {
+        [excelConfig.columns.resolutor]: userName,
+        [excelConfig.columns.fechaCierre]: formatDate(now),
+        [excelConfig.columns.estado]: estado
+    };
+    
+    return await updateRow(rowIndex, updates);
+}
+
+async function updateObservations(rowIndex, observations) {
+    return await updateCell(rowIndex, excelConfig.columns.observaciones, observations);
+}
+
+async function updateStatus(rowIndex, status) {
+    return await updateCell(rowIndex, excelConfig.columns.estado, status);
+}
+
+function shouldAutoClose(caso) {
+    const call1 = caso[excelConfig.columns.llamado1];
+    const call2 = caso[excelConfig.columns.llamado2];
+    const call3 = caso[excelConfig.columns.llamado3];
+    
+    if (!call1 || !call2 || !call3) {
+        return false;
+    }
+    
+    const hasSuccessfulContact = [call1, call2, call3].some(call => 
+        call.includes("Contactado exitosamente")
+    );
+    
+    return !hasSuccessfulContact;
+}
+
+function columnToLetter(column) {
+    let temp, letter = '';
+    while (column >= 0) {
+        temp = column % 26;
+        letter = String.fromCharCode(temp + 65) + letter;
+        column = Math.floor(column / 26) - 1;
+    }
+    return letter;
+}
+
+function formatDate(date) {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+}
+
+function formatDateTime(date) {
+    const dateStr = formatDate(date);
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${dateStr} ${hours}:${minutes}`;
+}
+
+function calculateDaysRemaining(fechaVencimiento) {
+    if (!fechaVencimiento) return null;
+    
+    const vencimiento = new Date(fechaVencimiento);
+    const hoy = new Date();
+    const diffTime = vencimiento - hoy;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays;
+}
