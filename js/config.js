@@ -1,7 +1,7 @@
 const msalConfig = {
     auth: {
         clientId: "f5c0aa2-c940-42c1-9a18-c0c3b96a58d5",
-        authority: "https://login.microsoftonline.com/252794fe-b53b-4754-8a2a-8529d34ca778",
+        authority: "https://login.microsoftonline.com/common",
         redirectUri: "https://asalazar1989.github.io/portal-riss/"
     },
     cache: {
