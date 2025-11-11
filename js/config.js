@@ -19,7 +19,7 @@ const excelConfig = {
     sitePath: "/sites/CentrodeServiciosRangelRHB",
     fileName: "Productividad RISS_Version12022025.xlsx",
     fileId: "BBC2BD08-61EE-45EF-BC83-034F5B1C6157",
-    sheetName: "Sheet1",
+    sheetName: "Casos RISS",
     
     columns: {
         idCaso: 0,
