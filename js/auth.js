@@ -28,21 +28,19 @@ function handleResponse(response) {
 
 async function signIn() {
     try {
-        showLoading("Iniciando sesión...");
-        // Cambiar de loginPopup a loginRedirect
         await msalInstance.loginRedirect(loginRequest);
     } catch (error) {
         console.error("Error en login:", error);
         showError("Error al iniciar sesión: " + error.message);
-        hideLoading();
     }
 }
 
 function signOut() {
     const logoutRequest = {
-        account: currentUser
+        account: currentUser,
+        postLogoutRedirectUri: msalConfig.auth.redirectUri
     };
-    msalInstance.logoutPopup(logoutRequest);
+    msalInstance.logoutRedirect(logoutRequest);
 }
 
 async function getToken() {
@@ -61,10 +59,9 @@ async function getToken() {
         const response = await msalInstance.acquireTokenSilent(silentRequest);
         return response.accessToken;
     } catch (error) {
-        console.warn("Token silencioso falló, intentando popup:", error);
+        console.warn("Token silencioso falló, intentando redirect:", error);
         if (error instanceof msal.InteractionRequiredAuthError) {
-            const response = await msalInstance.acquireTokenPopup(loginRequest);
-            return response.accessToken;
+            await msalInstance.acquireTokenRedirect(loginRequest);
         }
         throw error;
     }
