@@ -29,13 +29,11 @@ function handleResponse(response) {
 async function signIn() {
     try {
         showLoading("Iniciando sesión...");
-        const loginResponse = await msalInstance.loginPopup(loginRequest);
-        currentUser = loginResponse.account;
-        showApp();
+        // Cambiar de loginPopup a loginRedirect
+        await msalInstance.loginRedirect(loginRequest);
     } catch (error) {
         console.error("Error en login:", error);
         showError("Error al iniciar sesión: " + error.message);
-    } finally {
         hideLoading();
     }
 }
