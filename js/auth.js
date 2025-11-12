@@ -28,19 +28,23 @@ function handleResponse(response) {
 
 async function signIn() {
     try {
-        await msalInstance.loginRedirect(loginRequest);
+        showLoading("Iniciando sesión...");
+        const loginResponse = await msalInstance.loginRedirect(loginRequest);  // ← ESTE ES EL CAMBIO
+        currentUser = loginResponse.account;
+        showApp();
     } catch (error) {
         console.error("Error en login:", error);
         showError("Error al iniciar sesión: " + error.message);
+    } finally {
+        hideLoading();
     }
 }
 
 function signOut() {
     const logoutRequest = {
-        account: currentUser,
-        postLogoutRedirectUri: msalConfig.auth.redirectUri
+        account: currentUser
     };
-    msalInstance.logoutRedirect(logoutRequest);
+    msalInstance.logoutPopup(logoutRequest);
 }
 
 async function getToken() {
@@ -59,9 +63,10 @@ async function getToken() {
         const response = await msalInstance.acquireTokenSilent(silentRequest);
         return response.accessToken;
     } catch (error) {
-        console.warn("Token silencioso falló, intentando redirect:", error);
+        console.warn("Token silencioso falló, intentando popup:", error);
         if (error instanceof msal.InteractionRequiredAuthError) {
-            await msalInstance.acquireTokenRedirect(loginRequest);
+            const response = await msalInstance.acquireTokenPopup(loginRequest);
+            return response.accessToken;
         }
         throw error;
     }
