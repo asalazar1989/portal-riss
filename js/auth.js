@@ -7,44 +7,32 @@ function initializeMsal() {
         .then(handleResponse)
         .catch(err => {
             console.error("Error en redirect:", err);
-            throw err;
         });
 }
 
 function handleResponse(response) {
-    if (response !== null) {
+    if (response !== null && response.account) {
         currentUser = response.account;
         showApp();
-    } else {
-        const currentAccounts = msalInstance.getAllAccounts();
-        if (currentAccounts.length === 0) {
-            return;
-        } else if (currentAccounts.length === 1) {
-            currentUser = currentAccounts[0];
-            showApp();
-        }
+        return;
+    }
+    
+    const currentAccounts = msalInstance.getAllAccounts();
+    if (currentAccounts.length > 0) {
+        currentUser = currentAccounts[0];
+        showApp();
     }
 }
 
-async function signIn() {
-    try {
-        showLoading("Iniciando sesión...");
-        const loginResponse = await msalInstance.loginRedirect(loginRequest);  // ← ESTE ES EL CAMBIO
-        currentUser = loginResponse.account;
-        showApp();
-    } catch (error) {
-        console.error("Error en login:", error);
-        showError("Error al iniciar sesión: " + error.message);
-    } finally {
-        hideLoading();
-    }
+function signIn() {
+    msalInstance.loginRedirect(loginRequest);
 }
 
 function signOut() {
-    const logoutRequest = {
-        account: currentUser
-    };
-    msalInstance.logoutPopup(logoutRequest);
+    msalInstance.logoutRedirect({
+        account: currentUser,
+        postLogoutRedirectUri: msalConfig.auth.redirectUri
+    });
 }
 
 async function getToken() {
@@ -54,19 +42,18 @@ async function getToken() {
         throw new Error("No hay usuario autenticado");
     }
 
-    const silentRequest = {
-        scopes: loginRequest.scopes,
-        account: account
-    };
-
     try {
-        const response = await msalInstance.acquireTokenSilent(silentRequest);
+        const response = await msalInstance.acquireTokenSilent({
+            scopes: loginRequest.scopes,
+            account: account
+        });
         return response.accessToken;
     } catch (error) {
-        console.warn("Token silencioso falló, intentando popup:", error);
         if (error instanceof msal.InteractionRequiredAuthError) {
-            const response = await msalInstance.acquireTokenPopup(loginRequest);
-            return response.accessToken;
+            await msalInstance.acquireTokenRedirect({
+                scopes: loginRequest.scopes,
+                account: account
+            });
         }
         throw error;
     }
